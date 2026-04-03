@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased font-sans;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  /* ERP Standard Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 font-semibold rounded shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-700;
+  }
+  .btn-secondary {
+    @apply btn bg-slate-800 text-white hover:bg-slate-900;
+  }
+  .btn-outline {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100;
+  }
+
+  /* ERP Cards */
+  .erp-card {
+    @apply bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden;
+  }
+  .erp-card-header {
+    @apply px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between;
+  }
+  .erp-card-title {
+    @apply font-bold text-slate-800 text-sm uppercase tracking-wider;
+  }
+
+  /* ERP Table */
+  .erp-table {
+    @apply w-full text-sm border-collapse;
+  }
+  .erp-table thead th {
+    @apply bg-slate-800 text-white px-4 py-3 text-left font-bold uppercase text-[11px] tracking-wider sticky top-0 z-10;
+  }
+  .erp-table tbody td {
+    @apply px-4 py-3 border-b border-slate-100 text-slate-700;
+  }
+  .erp-table tbody tr:hover {
+    @apply bg-slate-50;
+  }
+
+  /* ERP Form Fields */
+  .erp-input {
+    @apply w-full bg-white border border-slate-300 rounded px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all;
+  }
+  .erp-label {
+    @apply block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .invoice-container {
+    width: 210mm;
+    margin: 0 !important;
+    padding: 10mm !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
