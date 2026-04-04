@@ -1,26 +1,40 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { CustomerService } from '@/lib/api';
 import { Customer } from '@/types';
 import { Plus, Trash2, User, MapPin, Phone, Search, Award, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function ThekedarsPage() {
-  const [customers, setCustomers] = useLocalStorage<Customer[]>('bhumi_customers', []);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [village, setVillage] = useState('');
   const [mobile, setMobile] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const addThekedar = () => {
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const data = await CustomerService.getAll();
+        setCustomers(data);
+      } catch (error) {
+        toast.error('Failed to load thekedar accounts');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCustomers();
+  }, []);
+
+  const addThekedar = async () => {
     if (!name || !mobile) {
       toast.error('Please enter name and mobile number');
       return;
     }
-    const newThekedar: Customer = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newThekedar: Partial<Customer> = {
       name,
       mobile,
       village,
@@ -29,11 +43,17 @@ export default function ThekedarsPage() {
       totalSpent: 0,
       balance: 0
     };
-    setCustomers([...customers, newThekedar]);
-    setName('');
-    setVillage('');
-    setMobile('');
-    toast.success('Thekedar account created');
+    
+    try {
+      const saved = await CustomerService.create(newThekedar);
+      setCustomers([...customers, saved]);
+      setName('');
+      setVillage('');
+      setMobile('');
+      toast.success('Thekedar account created');
+    } catch (error) {
+      toast.error('Failed to create account');
+    }
   };
 
   const deleteThekedar = (id: string) => {
@@ -41,9 +61,14 @@ export default function ThekedarsPage() {
       description: 'All linked transaction balances will be removed from this view.',
       action: {
         label: 'Delete',
-        onClick: () => {
-          setCustomers(customers.filter(c => c.id !== id));
-          toast.success('Account deleted');
+        onClick: async () => {
+          try {
+            await CustomerService.delete(id);
+            setCustomers(customers.filter(c => c.id !== id));
+            toast.success('Account deleted');
+          } catch (error) {
+            toast.error('Failed to delete account');
+          }
         },
       },
     });

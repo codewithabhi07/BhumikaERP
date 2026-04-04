@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { EmployeeService } from '@/lib/api';
 import { Employee, AttendanceEntry, AdvanceEntry } from '@/types';
 import { useParams, useRouter } from 'next/navigation';
 import { 
@@ -31,8 +31,17 @@ export default function EmployeeProfilePage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const [employees, setEmployees] = useLocalStorage<Employee[]>('bhumi_employees', []);
-  const employee = useMemo(() => employees.find(e => e.id === id), [employees, id]);
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    EmployeeService.getById(id).then(data => {
+      setEmployee(data);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
+  }, [id]);
 
   // Edit Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -47,10 +56,16 @@ export default function EmployeeProfilePage() {
   const [advanceDate, setAdvanceAmountDate] = useState(new Date().toISOString().split('T')[0]);
   const [advanceNotes, setAdvanceNotes] = useState('');
 
+  if (loading) return <div className="p-10 text-center font-bold text-slate-400 italic">Loading Profile...</div>;
   if (!employee) return <div className="p-10 text-center font-bold text-slate-400 italic">Staff Profile Not Found</div>;
 
-  const updateEmployee = (updatedData: Employee) => {
-    setEmployees(prev => prev.map(e => e.id === id ? updatedData : e));
+  const updateEmployee = async (updatedData: Employee) => {
+    try {
+      const updated = await EmployeeService.update(id, updatedData);
+      setEmployee(updated);
+    } catch (error) {
+      toast.error('Failed to update employee');
+    }
   };
 
   const toggleEdit = () => {

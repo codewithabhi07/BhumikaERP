@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { ProductService } from '@/lib/api';
 import { Product } from '@/types';
 import { Plus, Trash2, Package, Search, AlertTriangle, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useLocalStorage<Product[]>('bhumi_products', []);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [rate, setRate] = useState('');
   const [costPrice, setCostPrice] = useState('');
@@ -15,35 +16,52 @@ export default function ProductsPage() {
   const [minStock, setMinStock] = useState('5');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const addProduct = () => {
+  useEffect(() => {
+    ProductService.getAll().then(data => {
+      setProducts(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const addProduct = async () => {
     if (!name || !rate || !costPrice) {
       toast.error('Please fill name, rate, and cost price');
       return;
     }
-    const newProduct: Product = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newProduct: Partial<Product> = {
       name,
       defaultRate: Number(rate),
       costPrice: Number(costPrice),
       stock: Number(stock) || 0,
       minStock: Number(minStock) || 5
     };
-    setProducts([...products, newProduct]);
-    setName('');
-    setRate('');
-    setCostPrice('');
-    setStock('');
-    setMinStock('5');
-    toast.success('Product added to database');
+    
+    try {
+      const saved = await ProductService.create(newProduct);
+      setProducts([...products, saved]);
+      setName('');
+      setRate('');
+      setCostPrice('');
+      setStock('');
+      setMinStock('5');
+      toast.success('Product added to database');
+    } catch (error) {
+      toast.error('Failed to add product');
+    }
   };
 
   const deleteProduct = (id: string) => {
     toast('Are you sure you want to delete this product?', {
       action: {
         label: 'Delete',
-        onClick: () => {
-          setProducts(products.filter(p => p.id !== id));
-          toast.success('Product deleted');
+        onClick: async () => {
+          try {
+            await ProductService.delete(id);
+            setProducts(products.filter(p => p.id !== id));
+            toast.success('Product deleted');
+          } catch (error) {
+            toast.error('Failed to delete product');
+          }
         },
       },
     });
@@ -52,6 +70,8 @@ export default function ProductsPage() {
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (loading) return <div className="p-8 text-center font-bold text-slate-400">Loading products...</div>;
 
   return (
     <div className="py-4">

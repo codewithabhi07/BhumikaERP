@@ -1,28 +1,50 @@
 "use client";
 
-import React from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { SettingsService } from '@/lib/api';
 import { Settings as SettingsIcon, Save, Trash2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const [shopName, setShopName] = useLocalStorage('bhumi_shop_name', 'Bhumika Tiles & Building Material');
-  const [managerName, setManagerName] = useLocalStorage('bhumi_manager_name', 'Rohit Chavan');
-  const [phone, setPhone] = useLocalStorage('bhumi_phone', '8010060992');
-  const [location, setLocation] = useLocalStorage('bhumi_location', 'Parola');
+  const [shopName, setShopName] = useState('Bhumika Tiles & Building Material');
+  const [managerName, setManagerName] = useState('Rohit Chavan');
+  const [phone, setPhone] = useState('8010060992');
+  const [location, setLocation] = useState('Parola');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    SettingsService.get().then(data => {
+      if (data) {
+        setShopName(data.shopName || '');
+        setManagerName(data.managerName || '');
+        setPhone(data.phone || '');
+        setLocation(data.location || '');
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await SettingsService.update({
+        shopName,
+        managerName,
+        phone,
+        location
+      });
+      toast.success('Business profile updated');
+    } catch (error) {
+      toast.error('Failed to update settings');
+    }
+  };
 
   const handleReset = () => {
-    toast('DANGER: This will delete ALL business data', {
-      description: 'Estimates, Products, Khatabook, and Staff records will be permanently removed.',
-      action: {
-        label: 'Reset All',
-        onClick: () => {
-          localStorage.clear();
-          window.location.href = '/';
-        },
-      },
+    toast('DANGER: This action is disabled in the API version', {
+      description: 'Please contact support to reset the database.',
     });
   };
+
+  if (loading) return <div className="p-8 text-center font-bold text-slate-400">Loading settings...</div>;
 
   return (
     <div className="py-4 max-w-4xl">
@@ -75,7 +97,7 @@ export default function SettingsPage() {
           </div>
           
           <button 
-            onClick={() => toast.success('Business profile updated')}
+            onClick={handleSave}
             className="w-full bg-secondary text-white p-4 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-black transition-all flex items-center justify-center gap-2 border-b-4 border-black"
           >
             <Save size={16} /> Save Business Profile
@@ -88,10 +110,10 @@ export default function SettingsPage() {
               <Trash2 size={20} />
               <h3 className="font-black uppercase text-xs tracking-widest">Data Management</h3>
             </div>
-            <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed">Wipe all local storage data including estimates, products, and profile settings. This action is not reversible.</p>
+            <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed">System-wide data reset is disabled in the current API implementation.</p>
             <button 
-              onClick={handleReset}
-              className="w-full border-2 border-red-100 text-red-500 p-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-red-50 transition-all active:scale-95"
+              disabled
+              className="w-full border-2 border-gray-100 text-gray-400 p-4 rounded-xl font-black uppercase tracking-widest text-[10px] cursor-not-allowed"
             >
               Reset Entire Application
             </button>

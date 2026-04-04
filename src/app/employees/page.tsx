@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { EmployeeService } from '@/lib/api';
 import { Employee, AttendanceEntry } from '@/types';
 import { 
   Plus, 
@@ -23,7 +23,15 @@ import { toast } from 'sonner';
 import { clsx } from 'clsx';
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useLocalStorage<Employee[]>('bhumi_employees', []);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    EmployeeService.getAll().then(data => {
+      setEmployees(data);
+      setLoading(false);
+    });
+  }, []);
   
   // Form State
   const [name, setName] = useState('');
@@ -34,14 +42,13 @@ export default function EmployeesPage() {
   const [joinDate, setJoinDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const addEmployee = () => {
+  const addEmployee = async () => {
     if (!name || !mobile || !salary) {
       toast.error('Please fill all required fields');
       return;
     }
     
-    const newEmployee: Employee = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newEmployee: Partial<Employee> = {
       name,
       mobile,
       village,
@@ -52,15 +59,20 @@ export default function EmployeesPage() {
       advances: []
     };
     
-    setEmployees([...employees, newEmployee]);
-    toast.success('Employee Profile Created');
-    
-    // Reset Form
-    setName('');
-    setMobile('');
-    setVillage('');
-    setSalary('');
-    setRole('Worker');
+    try {
+      const saved = await EmployeeService.create(newEmployee);
+      setEmployees([...employees, saved]);
+      toast.success('Employee Profile Created');
+      
+      // Reset Form
+      setName('');
+      setMobile('');
+      setVillage('');
+      setSalary('');
+      setRole('Worker');
+    } catch (error) {
+      toast.error('Failed to save profile');
+    }
   };
 
   const deleteEmployee = useCallback((id: string) => {
@@ -68,32 +80,41 @@ export default function EmployeesPage() {
       description: 'All attendance and advance records will be permanently lost.',
       action: {
         label: 'Delete',
-        onClick: () => {
-          setEmployees(prev => prev.filter(e => e.id !== id));
-          toast.success('Employee Profile Deleted');
+        onClick: async () => {
+          try {
+            await EmployeeService.delete(id);
+            setEmployees(prev => prev.filter(e => e.id !== id));
+            toast.success('Employee Profile Deleted');
+          } catch (error) {
+            toast.error('Failed to delete profile');
+          }
         },
       },
     });
-  }, [setEmployees]);
+  }, []);
 
-  const markQuickAttendance = useCallback((employeeId: string, status: 'present' | 'absent' | 'half-day') => {
+  const markQuickAttendance = useCallback(async (employeeId: string, status: 'present' | 'absent' | 'half-day') => {
     const todayStr = new Date().toLocaleDateString('en-IN');
-    setEmployees(prev => prev.map(emp => {
-      if (emp.id === employeeId) {
-        const attendance = emp.attendance || [];
-        const existingIndex = attendance.findIndex(a => a.date === todayStr);
-        let newAttendance = [...attendance];
-        if (existingIndex !== -1) {
-          newAttendance[existingIndex].status = status;
-        } else {
-          newAttendance.push({ date: todayStr, status });
-        }
-        return { ...emp, attendance: newAttendance };
-      }
-      return emp;
-    }));
-    toast.success(`Attendance updated`);
-  }, [setEmployees]);
+    const emp = employees.find(e => e.id === employeeId);
+    if (!emp) return;
+
+    const attendance = emp.attendance || [];
+    const existingIndex = attendance.findIndex(a => a.date === todayStr);
+    let newAttendance = [...attendance];
+    if (existingIndex !== -1) {
+      newAttendance[existingIndex].status = status;
+    } else {
+      newAttendance.push({ date: todayStr, status });
+    }
+
+    try {
+      const updated = await EmployeeService.update(employeeId, { attendance: newAttendance });
+      setEmployees(prev => prev.map(item => item.id === employeeId ? updated : item));
+      toast.success(`Attendance updated`);
+    } catch (error) {
+      toast.error('Failed to update attendance');
+    }
+  }, [employees]);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter(e => 

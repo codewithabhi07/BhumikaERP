@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { calculateThreeTableSqFt, numberToWords } from '@/lib/utils';
 import { EstimateItem, Estimate, Product, Customer, KhatabookEntry } from '@/types';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { EstimateService, ProductService, CustomerService, KhatabookService } from '@/lib/api';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,10 +41,12 @@ export default function EstimateForm() {
   const [estNo, setEstNo] = useState('');
   const [date, setDate] = useState('');
 
-  const [estimates, setEstimates] = useLocalStorage<Estimate[]>('bhumi_estimates', []);
-  const [products] = useLocalStorage<Product[]>('bhumi_products', []);
-  const [customers, setCustomers] = useLocalStorage<Customer[]>('bhumi_customers', []);
-  const [khatabook, setKhatabook] = useLocalStorage<KhatabookEntry[]>('bhumi_khatabook', []);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [khatabook, setKhatabook] = useState<KhatabookEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [showProductList, setShowProductList] = useState<{index: number, visible: boolean}>({ index: -1, visible: false });
   const [showThekedarSearch, setShowThekedarSearch] = useState(false);
 
@@ -52,6 +54,26 @@ export default function EstimateForm() {
     const now = new Date();
     setDate(now.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }));
     setEstNo(`EST-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`);
+    
+    const fetchData = async () => {
+      try {
+        const [estData, prodData, custData, khataData] = await Promise.all([
+          EstimateService.getAll(),
+          ProductService.getAll(),
+          CustomerService.getAll(),
+          KhatabookService.getAll()
+        ]);
+        setEstimates(estData);
+        setProducts(prodData);
+        setCustomers(custData);
+        setKhatabook(khataData);
+      } catch (error) {
+        toast.error('Failed to load form data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const addRow = () => {
@@ -120,45 +142,46 @@ export default function EstimateForm() {
   const grandTotal = Math.round(subTotal + gstTotal - discount);
   const balance = grandTotal - paidAmount;
 
-  const handleSave = () => {
-    const newEstimate: Estimate = {
-      id: Math.random().toString(36).substr(2, 9),
+  const handleSave = async () => {
+    const newEstimate: Partial<Estimate> = {
       estNo, date, customerName, village, mobileNumber, items,
       subTotal, totalCost, discount, gstType, gstRate, grandTotal, paidAmount, balance
     };
     
-    setEstimates([...estimates, newEstimate]);
+    try {
+      const savedEst = await EstimateService.create(newEstimate);
+      setEstimates([...estimates, savedEst]);
 
-    if (isThekedarAccount && balance > 0) {
-      const khatabookEntry: KhatabookEntry = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: customerName,
-        mobile: mobileNumber,
-        amount: balance,
-        type: 'take',
-        dueDate: '',
-        notes: `Linked to Bill No: ${estNo}`,
-        createdAt: date
-      };
-      setKhatabook([...khatabook, khatabookEntry]);
-      
-      const updatedCustomers = customers.map(c => {
-        if (c.mobile === mobileNumber) {
-          return {
-            ...c,
-            totalOrders: c.totalOrders + 1,
-            totalSpent: c.totalSpent + grandTotal,
-            balance: c.balance + balance
-          };
+      if (isThekedarAccount && balance > 0) {
+        const khatabookEntry: Partial<KhatabookEntry> = {
+          name: customerName,
+          mobile: mobileNumber,
+          amount: balance,
+          type: 'take',
+          dueDate: '',
+          notes: `Linked to Bill No: ${estNo}`,
+          createdAt: date
+        };
+        const savedKhata = await KhatabookService.create(khatabookEntry);
+        setKhatabook([...khatabook, savedKhata]);
+        
+        const currentCustomer = customers.find(c => c.mobile === mobileNumber);
+        if (currentCustomer) {
+          const updatedCust = await CustomerService.update(currentCustomer.id, {
+            totalOrders: (currentCustomer.totalOrders || 0) + 1,
+            totalSpent: (currentCustomer.totalSpent || 0) + grandTotal,
+            balance: (currentCustomer.balance || 0) + balance
+          });
+          setCustomers(customers.map(c => c.id === updatedCust.id ? updatedCust : c));
         }
-        return c;
-      });
-      setCustomers(updatedCustomers);
-    }
+      }
 
-    toast.success('Bill Saved Successfully', {
-      description: isThekedarAccount ? 'Transaction linked to Thekedar credit.' : 'Record stored in history.'
-    });
+      toast.success('Bill Saved Successfully', {
+        description: isThekedarAccount ? 'Transaction linked to Thekedar credit.' : 'Record stored in history.'
+      });
+    } catch (error) {
+      toast.error('Failed to save bill');
+    }
   };
 
   // Helper to get category icon
@@ -169,6 +192,8 @@ export default function EstimateForm() {
     if (n.includes('hardware') || n.includes('glue')) return <Wrench size={14} className="text-slate-500" />;
     return <Package size={14} className="text-emerald-500" />;
   };
+
+  if (loading) return <div className="p-8 text-center font-bold text-slate-400">Loading form...</div>;
 
   return (
     <motion.div 

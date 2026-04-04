@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo, useEffect } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Estimate, Product, Employee } from '@/types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { EstimateService, ProductService, KhatabookService, EmployeeService } from '@/lib/api';
+import { Estimate, Product, Employee, KhatabookEntry } from '@/types';
 import { 
   IndianRupee, 
   History, 
@@ -37,10 +37,33 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
 export default function Dashboard() {
-  const [estimates] = useLocalStorage<Estimate[]>('bhumi_estimates', []);
-  const [products] = useLocalStorage<Product[]>('bhumi_products', []);
-  const [khatabook] = useLocalStorage<any[]>('bhumi_khatabook', []);
-  const [employees] = useLocalStorage<Employee[]>('bhumi_employees', []);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [khatabook, setKhatabook] = useState<KhatabookEntry[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [estData, prodData, khataData, empData] = await Promise.all([
+          EstimateService.getAll(),
+          ProductService.getAll(),
+          KhatabookService.getAll(),
+          EmployeeService.getAll()
+        ]);
+        setEstimates(estData);
+        setProducts(prodData);
+        setKhatabook(khataData);
+        setEmployees(empData);
+      } catch (error) {
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Totals
   const totalSales = estimates.reduce((sum, est) => sum + (est.grandTotal || 0), 0);
@@ -54,7 +77,7 @@ export default function Dashboard() {
 
   // Toast Notifications for Low Stock
   useEffect(() => {
-    if (lowStockItems.length > 0) {
+    if (!loading && lowStockItems.length > 0) {
       toast.warning(`${lowStockItems.length} Items are low in stock!`, {
         description: 'Check Stock Inventory for details.',
         action: {
@@ -63,7 +86,7 @@ export default function Dashboard() {
         }
       });
     }
-  }, [lowStockItems.length]);
+  }, [lowStockItems.length, loading]);
 
   // Analytics: Monthly Sales (Mock groups by date)
   const chartData = useMemo(() => {
@@ -96,6 +119,8 @@ export default function Dashboard() {
 
   const COLORS = ['#059669', '#0284c7', '#7c3aed', '#db2777', '#ea580c'];
 
+  if (loading) return <div className="p-8 text-center font-bold text-slate-400">Loading dashboard...</div>;
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }} 
@@ -105,7 +130,7 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Business Dashboard</h1>
-          <p className="text-sm text-slate-500 font-medium italic">Welcome back, Rohit Chavan</p>
+          <p className="text-sm text-slate-500 font-medium italic">Welcome back</p>
         </div>
         <Link href="/estimate/new" className="btn-primary group">
           <Plus size={18} className="group-hover:rotate-90 transition-transform" />

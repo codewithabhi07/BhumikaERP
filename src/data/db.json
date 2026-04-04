@@ -1,0 +1,53 @@
+{
+  "employees": [
+    {
+      "name": "Ganesh Mali",
+      "mobile": "7775025688",
+      "village": "Lasur",
+      "role": "Manager",
+      "salary": 15000,
+      "joinDate": "2026-04-04",
+      "attendance": [],
+      "advances": [],
+      "id": "17qzkkfyc"
+    }
+  ],
+  "estimates": [
+    {
+      "estNo": "EST-20260404-226",
+      "date": "04/04/2026",
+      "customerName": "lalit mali",
+      "village": "lasur",
+      "mobileNumber": "7775025688",
+      "items": [
+        {
+          "id": "lugcrpsyx",
+          "particular": "Cement",
+          "qty": 1,
+          "rate": "50",
+          "costPrice": 0,
+          "amount": 50,
+          "isExtra": true
+        }
+      ],
+      "subTotal": 50,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 50,
+      "paidAmount": 0,
+      "balance": 50,
+      "id": "t3a8kvefg"
+    }
+  ],
+  "products": [],
+  "khatabook": [],
+  "customers": [],
+  "settings": {
+    "shopName": "Bhumika Tiles & Building Material",
+    "managerName": "Rohit Chavan",
+    "phone": "8010060992",
+    "location": "Parola"
+  }
+}

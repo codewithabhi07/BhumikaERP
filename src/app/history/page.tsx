@@ -1,26 +1,41 @@
 "use client";
 
-import React from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { EstimateService } from '@/lib/api';
 import { Estimate } from '@/types';
 import { Eye, Printer, Trash2, TrendingUp, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function HistoryPage() {
-  const [estimates, setEstimates] = useLocalStorage<Estimate[]>('bhumi_estimates', []);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    EstimateService.getAll().then(data => {
+      setEstimates(data);
+      setLoading(false);
+    });
+  }, []);
 
   const deleteEstimate = (id: string) => {
     toast('Delete this estimate permanently?', {
       description: 'This action cannot be undone.',
       action: {
         label: 'Delete',
-        onClick: () => {
-          setEstimates(estimates.filter(est => est.id !== id));
-          toast.success('Estimate deleted');
+        onClick: async () => {
+          try {
+            await EstimateService.delete(id);
+            setEstimates(estimates.filter(est => est.id !== id));
+            toast.success('Estimate deleted');
+          } catch (error) {
+            toast.error('Failed to delete estimate');
+          }
         },
       },
     });
   };
+
+  if (loading) return <div className="p-8 text-center font-bold text-slate-400">Loading history...</div>;
 
   return (
     <div className="py-4">

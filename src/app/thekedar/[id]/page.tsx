@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { CustomerService, EstimateService } from '@/lib/api';
 import { Estimate, Customer } from '@/types';
 import { Printer, User, MapPin, Phone, History, FileText, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -12,13 +12,27 @@ export default function ThekedarStatementPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [customers] = useLocalStorage<Customer[]>('bhumi_customers', []);
-  const [estimates] = useLocalStorage<Estimate[]>('bhumi_estimates', []);
+  const [thekedar, setThekedar] = useState<Customer | null>(null);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const thekedar = customers.find(c => c.id === id);
+  useEffect(() => {
+    Promise.all([
+      CustomerService.getById(id),
+      EstimateService.getAll()
+    ]).then(([customerData, estimatesData]) => {
+      setThekedar(customerData);
+      setEstimates(estimatesData);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
+  }, [id]);
+
   const thekedarEstimates = estimates.filter(e => e.mobileNumber === thekedar?.mobile).reverse();
 
-  if (!thekedar) return <div className="p-10 text-center">Thekedar Account not found.</div>;
+  if (loading) return <div className="p-10 text-center font-bold text-slate-400 italic">Loading Statement...</div>;
+  if (!thekedar) return <div className="p-10 text-center font-bold text-slate-400 italic">Thekedar Account not found.</div>;
 
   const totalBilled = thekedarEstimates.reduce((sum, e) => sum + (e.grandTotal || 0), 0);
   const totalPaid = thekedarEstimates.reduce((sum, e) => sum + (e.paidAmount || 0), 0);

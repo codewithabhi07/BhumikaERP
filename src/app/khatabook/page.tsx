@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { KhatabookService } from '@/lib/api';
 import { KhatabookEntry } from '@/types';
 import { Plus, Trash2, Search, MessageCircle, Calendar, ArrowUpRight, ArrowDownLeft, User, Phone, Award } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -9,8 +9,16 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function KhatabookPage() {
-  const [entries, setEntries] = useLocalStorage<KhatabookEntry[]>('bhumi_khatabook', []);
+  const [entries, setEntries] = useState<KhatabookEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'take' | 'give'>('take');
+  
+  useEffect(() => {
+    KhatabookService.getAll().then(data => {
+      setEntries(data);
+      setLoading(false);
+    });
+  }, []);
   
   // Form State
   const [name, setName] = useState('');
@@ -20,13 +28,12 @@ export default function KhatabookPage() {
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!name || !amount) {
       toast.error('Name and Amount are required');
       return;
     }
-    const newEntry: KhatabookEntry = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newEntry: Partial<KhatabookEntry> = {
       name,
       mobile,
       amount: Number(amount),
@@ -35,24 +42,35 @@ export default function KhatabookPage() {
       notes,
       createdAt: new Date().toLocaleDateString('en-IN')
     };
-    setEntries([...entries, newEntry]);
     
-    // Reset Form
-    setName('');
-    setMobile('');
-    setAmount('');
-    setDueDate('');
-    setNotes('');
-    toast.success('Entry added to Khatabook');
+    try {
+      const saved = await KhatabookService.create(newEntry);
+      setEntries([...entries, saved]);
+      
+      // Reset Form
+      setName('');
+      setMobile('');
+      setAmount('');
+      setDueDate('');
+      setNotes('');
+      toast.success('Entry added to Khatabook');
+    } catch (error) {
+      toast.error('Failed to add entry');
+    }
   };
 
   const deleteEntry = (id: string) => {
     toast('Delete this entry?', {
       action: {
         label: 'Delete',
-        onClick: () => {
-          setEntries(entries.filter(e => e.id !== id));
-          toast.success('Entry deleted');
+        onClick: async () => {
+          try {
+            await KhatabookService.delete(id);
+            setEntries(entries.filter(e => e.id !== id));
+            toast.success('Entry deleted');
+          } catch (error) {
+            toast.error('Failed to delete entry');
+          }
         },
       },
     });
