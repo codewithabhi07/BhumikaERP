@@ -10,6 +10,8 @@ import {
   Package, 
   Settings, 
   BookOpen,
+  Users,
+  ShieldCheck,
   ChevronRight,
   Menu,
   X
@@ -23,6 +25,8 @@ const menuItems = [
   { name: 'Bill History', icon: History, href: '/history' },
   { name: 'Stock Inventory', icon: Package, href: '/products' },
   { name: 'Khatabook', icon: BookOpen, href: '/khatabook' },
+  { name: 'Thekedar Accounts', icon: ShieldCheck, href: '/thekedars' },
+  { name: 'Staff Management', icon: Users, href: '/employees' },
   { name: 'System Settings', icon: Settings, href: '/settings' },
 ];
 

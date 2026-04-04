@@ -64,6 +64,21 @@
   .erp-label {
     @apply block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5;
   }
+
+  /* Shimmer Effect for Skeletons */
+  .shimmer {
+    @apply relative overflow-hidden bg-slate-200;
+  }
+  .shimmer::after {
+    @apply absolute inset-0 content-[''];
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 @media print {

@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { KhatabookEntry } from '@/types';
-import { Plus, Trash2, Search, MessageCircle, Calendar, ArrowUpRight, ArrowDownLeft, User, Phone } from 'lucide-react';
+import { Plus, Trash2, Search, MessageCircle, Calendar, ArrowUpRight, ArrowDownLeft, User, Phone, Award } from 'lucide-react';
 import { clsx } from 'clsx';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function KhatabookPage() {
   const [entries, setEntries] = useLocalStorage<KhatabookEntry[]>('bhumi_khatabook', []);
@@ -19,7 +21,10 @@ export default function KhatabookPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const addEntry = () => {
-    if (!name || !amount) return;
+    if (!name || !amount) {
+      toast.error('Name and Amount are required');
+      return;
+    }
     const newEntry: KhatabookEntry = {
       id: Math.random().toString(36).substr(2, 9),
       name,
@@ -38,26 +43,37 @@ export default function KhatabookPage() {
     setAmount('');
     setDueDate('');
     setNotes('');
+    toast.success('Entry added to Khatabook');
   };
 
   const deleteEntry = (id: string) => {
-    if (confirm('Delete this entry?')) {
-      setEntries(entries.filter(e => e.id !== id));
-    }
+    toast('Delete this entry?', {
+      action: {
+        label: 'Delete',
+        onClick: () => {
+          setEntries(entries.filter(e => e.id !== id));
+          toast.success('Entry deleted');
+        },
+      },
+    });
   };
 
   const sendWhatsApp = (entry: KhatabookEntry) => {
-    if (!entry.mobile) return alert('Mobile number not available');
+    if (!entry.mobile) {
+      toast.error('Mobile number not available');
+      return;
+    }
     
     let message = "";
     if (entry.type === 'take') {
-      message = `Hello ${entry.name}, this is a reminder from Bhumika Plywood regarding a pending payment of ₹${entry.amount}. Please settle it by ${entry.dueDate || 'earliest'}. Thank you!`;
+      message = `Hello ${entry.name}, this is a reminder from Bhumika Tiles regarding a pending payment of ₹${entry.amount}. Please settle it by ${entry.dueDate || 'earliest'}. Thank you!`;
     } else {
       message = `Hello ${entry.name}, this is regarding the payment of ₹${entry.amount} that we owe you. We plan to settle it by ${entry.dueDate || 'soon'}. Thank you for your patience!`;
     }
     
     const url = `https://wa.me/91${entry.mobile}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
+    toast.success('WhatsApp opened');
   };
 
   const filteredEntries = entries.filter(e => 
@@ -77,6 +93,13 @@ export default function KhatabookPage() {
         </div>
         
         <div className="flex gap-4">
+          <Link href="/thekedars" className="bg-white border-2 border-slate-100 p-4 rounded-2xl flex items-center gap-3 hover:border-emerald-600 transition-all shadow-sm group">
+            <div className="p-2 bg-slate-50 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 rounded-lg transition-colors">
+              <Award size={20} />
+            </div>
+            <span className="font-black text-[10px] uppercase text-slate-500 tracking-widest group-hover:text-emerald-600">Thekedar Accounts</span>
+          </Link>
+          
           <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-4">
             <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-200">
               <ArrowDownLeft size={20} />
@@ -100,7 +123,6 @@ export default function KhatabookPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Entry Form */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm h-fit space-y-6">
           <div className="flex p-1 bg-gray-100 rounded-2xl">
             <button 
@@ -125,24 +147,24 @@ export default function KhatabookPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block ml-1 tracking-widest">Name</label>
+              <label className="erp-label">Name</label>
               <div className="relative">
                 <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                 <input 
                   type="text" value={name} onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-secondary transition-all"
+                  className="erp-input pl-12 font-bold"
                   placeholder="Enter Name"
                 />
               </div>
             </div>
             
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block ml-1 tracking-widest">Mobile Number</label>
+              <label className="erp-label">Mobile Number</label>
               <div className="relative">
                 <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                 <input 
                   type="text" value={mobile} onChange={(e) => setMobile(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 p-4 pl-12 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-secondary transition-all"
+                  className="erp-input pl-12 font-bold"
                   placeholder="10-digit number"
                 />
               </div>
@@ -150,27 +172,27 @@ export default function KhatabookPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block ml-1 tracking-widest">Amount (₹)</label>
+                <label className="erp-label">Amount (₹)</label>
                 <input 
                   type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-secondary transition-all"
+                  className="erp-input font-bold"
                   placeholder="0.00"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block ml-1 tracking-widest">Due Date</label>
+                <label className="erp-label">Due Date</label>
                 <input 
                   type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-secondary transition-all text-xs"
+                  className="erp-input font-bold text-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block ml-1 tracking-widest">Notes</label>
+              <label className="erp-label">Notes</label>
               <textarea 
                 value={notes} onChange={(e) => setNotes(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 font-bold text-secondary transition-all h-24 resize-none text-sm"
+                className="erp-input h-24 resize-none text-sm font-medium"
                 placeholder="Optional notes..."
               ></textarea>
             </div>
@@ -182,12 +204,11 @@ export default function KhatabookPage() {
                 activeTab === 'take' ? "bg-emerald-500 shadow-emerald-100" : "bg-red-500 shadow-red-100"
               )}
             >
-              Add Entry to Khatabook
+              Add Entry
             </button>
           </div>
         </div>
 
-        {/* Entry List */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
             <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4">
@@ -218,13 +239,13 @@ export default function KhatabookPage() {
                         <User size={20} />
                       </div>
                       <div>
-                        <h4 className="font-black text-secondary text-base leading-none mb-1">{entry.name}</h4>
+                        <h4 className="font-black text-secondary text-base uppercase leading-none mb-1">{entry.name}</h4>
                         <div className="flex items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-tighter">
                           <span>{entry.mobile || 'No Mobile'}</span>
                           <span>•</span>
                           <span className="flex items-center gap-1"><Calendar size={10}/> {entry.createdAt}</span>
                         </div>
-                        {entry.notes && <p className="text-xs text-gray-400 mt-2 font-medium italic">"{entry.notes}"</p>}
+                        {entry.notes && <p className="text-xs text-slate-400 mt-2 font-medium italic">"{entry.notes}"</p>}
                       </div>
                     </div>
 
@@ -234,7 +255,7 @@ export default function KhatabookPage() {
                           "text-xl font-black tracking-tighter",
                           entry.type === 'take' ? "text-emerald-600" : "text-red-600"
                         )}>
-                          ₹ {entry.amount.toLocaleString('en-IN')}
+                          ₹ {(entry.amount || 0).toLocaleString('en-IN')}
                         </p>
                         {entry.dueDate && (
                           <p className="text-[9px] font-black uppercase text-orange-400 tracking-widest mt-1">
@@ -243,7 +264,7 @@ export default function KhatabookPage() {
                         )}
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => sendWhatsApp(entry)}
                           className="p-3 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm"

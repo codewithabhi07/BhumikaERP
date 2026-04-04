@@ -53,6 +53,33 @@ export interface Customer {
   id: string;
   name: string;
   mobile: string;
+  village?: string;
+  isThekedar: boolean; // True if this is a registered contractor
   totalOrders: number;
   totalSpent: number;
+  balance: number; // Running balance for Khatabook integration
+}
+
+export interface AttendanceEntry {
+  date: string;
+  status: 'present' | 'absent' | 'half-day';
+}
+
+export interface AdvanceEntry {
+  id: string;
+  amount: number;
+  date: string;
+  notes: string;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  mobile: string;
+  village: string;
+  role: string; // manager, worker, labour etc.
+  salary: number;
+  joinDate: string;
+  attendance: AttendanceEntry[];
+  advances: AdvanceEntry[];
 }
