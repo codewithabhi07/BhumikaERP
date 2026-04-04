@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Trash2, Plus, Printer, Save, Search, Calculator, User, Phone, Package, Receipt } from 'lucide-react';
+import { Trash2, Plus, Printer, Save, Search, Calculator, User, Phone, Package, Receipt, MapPin } from 'lucide-react';
 import { calculateThreeTableSqFt, numberToWords } from '@/lib/utils';
 import { EstimateItem, Estimate, Product } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -9,9 +9,10 @@ import Image from 'next/image';
 
 export default function EstimateForm() {
   const [customerName, setCustomerName] = useState('');
+  const [village, setVillage] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [items, setItems] = useState<EstimateItem[]>([
-    { id: '1', particular: '', length: 0, width: 0, qty: 1, sqft: 0, rate: 0, costPrice: 0, amount: 0 }
+    { id: '1', particular: '', length: 0, width: 0, qty: 1, sqft: 0, rate: 0, costPrice: 0, amount: 0, isExtra: false }
   ]);
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
@@ -31,7 +32,11 @@ export default function EstimateForm() {
   }, []);
 
   const addRow = () => {
-    setItems([...items, { id: Math.random().toString(36).substr(2, 9), particular: '', length: 0, width: 0, qty: 1, sqft: 0, rate: 0, costPrice: 0, amount: 0 }]);
+    setItems([...items, { id: Math.random().toString(36).substr(2, 9), particular: '', length: 0, width: 0, qty: 1, sqft: 0, rate: 0, costPrice: 0, amount: 0, isExtra: false }]);
+  };
+
+  const addExtraRow = () => {
+    setItems([...items, { id: Math.random().toString(36).substr(2, 9), particular: '', qty: 1, rate: 0, costPrice: 0, amount: 0, isExtra: true }]);
   };
 
   const deleteRow = (id: string) => {
@@ -41,11 +46,16 @@ export default function EstimateForm() {
   const updateItem = (id: string, field: keyof EstimateItem, value: string | number) => {
     setItems(items.map(item => {
       if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        if (['length', 'width', 'qty'].includes(field)) {
-          updated.sqft = calculateThreeTableSqFt(Number(updated.length), Number(updated.width), Number(updated.qty));
+        const updated = { ...item, [field]: value } as EstimateItem;
+        if (!updated.isExtra) {
+          if (['length', 'width', 'qty'].includes(field)) {
+            updated.sqft = calculateThreeTableSqFt(Number(updated.length || 0), Number(updated.width || 0), Number(updated.qty));
+          }
+          updated.amount = Number(((updated.sqft || 0) * updated.rate).toFixed(2));
+        } else {
+          // Extra item calculation: qty * rate
+          updated.amount = Number((updated.qty * updated.rate).toFixed(2));
         }
-        updated.amount = Number((updated.sqft * updated.rate).toFixed(2));
         return updated;
       }
       return item;
@@ -55,19 +65,39 @@ export default function EstimateForm() {
   const selectProduct = (index: number, product: Product) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], particular: product.name, rate: product.defaultRate, costPrice: product.costPrice || 0 };
-    newItems[index].amount = Number((newItems[index].sqft * newItems[index].rate).toFixed(2));
+    if (!newItems[index].isExtra) {
+      newItems[index].amount = Number(((newItems[index].sqft || 0) * newItems[index].rate).toFixed(2));
+    } else {
+      newItems[index].amount = Number((newItems[index].qty * newItems[index].rate).toFixed(2));
+    }
     setItems(newItems);
     setShowProductList({ index: -1, visible: false });
   };
 
   const subTotal = items.reduce((sum, item) => sum + (item.amount || 0), 0);
-  const totalCost = items.reduce((sum, item) => sum + ((item.sqft || 0) * (item.costPrice || 0)), 0);
+  const totalCost = items.reduce((sum, item) => {
+    if (!item.isExtra) {
+      return sum + ((item.sqft || 0) * (item.costPrice || 0));
+    }
+    return sum + (item.qty * (item.costPrice || 0));
+  }, 0);
   const gstTotal = gstType === 'none' ? 0 : (subTotal * gstRate) / 100;
   const grandTotal = Math.round(subTotal + gstTotal - discount);
   const balance = grandTotal - paidAmount;
 
+  const handleSave = () => {
+    const newEstimate: Estimate = {
+      id: Math.random().toString(36).substr(2, 9),
+      estNo, date, customerName, village, mobileNumber, items,
+      subTotal, totalCost, discount, gstType, gstRate, grandTotal, paidAmount, balance
+    };
+    setEstimates([...estimates, newEstimate]);
+    alert('Estimate Saved Successfully!');
+  };
+
   return (
     <div className="flex flex-col gap-6">
+      {/* ERP Entry Form */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 no-print">
         <div className="xl:col-span-3 erp-card">
           <div className="erp-card-header">
@@ -77,22 +107,29 @@ export default function EstimateForm() {
             </span>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <div className="md:col-span-1">
                 <label className="erp-label">Customer Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                   <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="erp-input pl-10" placeholder="Full Name" />
                 </div>
               </div>
-              <div>
+              <div className="md:col-span-1">
+                <label className="erp-label">Village / City</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                  <input type="text" value={village} onChange={e => setVillage(e.target.value)} className="erp-input pl-10" placeholder="Location" />
+                </div>
+              </div>
+              <div className="md:col-span-1">
                 <label className="erp-label">Mobile Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                   <input type="text" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className="erp-input pl-10" placeholder="10 Digits" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2 md:col-span-1">
                 <div>
                   <label className="erp-label">Bill No</label>
                   <input type="text" value={estNo} readOnly className="erp-input bg-slate-50 font-mono text-[11px]" />
@@ -146,14 +183,20 @@ export default function EstimateForm() {
                         )}
                       </td>
                       <td className="p-2">
-                        <div className="flex items-center gap-1">
-                          <input type="number" className="erp-input !p-1 text-center" value={item.length || ''} onChange={e => updateItem(item.id, 'length', e.target.value)} />
-                          <span className="text-slate-300 font-bold">×</span>
-                          <input type="number" className="erp-input !p-1 text-center" value={item.width || ''} onChange={e => updateItem(item.id, 'width', e.target.value)} />
-                        </div>
+                        {!item.isExtra ? (
+                          <div className="flex items-center gap-1">
+                            <input type="number" className="erp-input !p-1 text-center" value={item.length || ''} onChange={e => updateItem(item.id, 'length', e.target.value)} />
+                            <span className="text-slate-300 font-bold">×</span>
+                            <input type="number" className="erp-input !p-1 text-center" value={item.width || ''} onChange={e => updateItem(item.id, 'width', e.target.value)} />
+                          </div>
+                        ) : (
+                          <div className="text-center text-slate-300 text-[10px] font-bold uppercase italic">N/A</div>
+                        )}
                       </td>
                       <td className="p-2"><input type="number" className="erp-input !p-1 text-center" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} /></td>
-                      <td className="p-2 text-center font-bold text-emerald-600">{(item.sqft || 0).toFixed(2)}</td>
+                      <td className="p-2 text-center font-bold text-emerald-600">
+                        {!item.isExtra ? (item.sqft || 0).toFixed(2) : '-'}
+                      </td>
                       <td className="p-2 text-center"><input type="number" className="erp-input !p-1 text-center font-bold" value={item.rate || ''} onChange={e => updateItem(item.id, 'rate', e.target.value)} /></td>
                       <td className="p-2 text-right font-black text-slate-800">₹{(item.amount || 0).toFixed(2)}</td>
                       <td className="p-2 text-center">
@@ -164,9 +207,14 @@ export default function EstimateForm() {
                 </tbody>
               </table>
             </div>
-            <button onClick={addRow} className="mt-4 flex items-center gap-2 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-widest px-4 py-2 border border-dashed border-emerald-200 rounded bg-emerald-50/50">
-              <Plus size={14} /> Add New Row (Enter)
-            </button>
+            <div className="mt-4 flex gap-3">
+              <button onClick={addRow} className="flex items-center gap-2 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-widest px-4 py-2 border border-dashed border-emerald-200 rounded bg-emerald-50/50">
+                <Plus size={14} /> Add Row
+              </button>
+              <button onClick={addExtraRow} className="flex items-center gap-2 text-[11px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest px-4 py-2 border border-dashed border-blue-200 rounded bg-blue-50/50">
+                <Plus size={14} /> Add Extra Item
+              </button>
+            </div>
           </div>
         </div>
 
@@ -209,11 +257,7 @@ export default function EstimateForm() {
               <button onClick={() => window.print()} className="btn-primary w-full !text-xs !py-3 uppercase tracking-tighter">
                 <Printer size={14} /> Print
               </button>
-              <button onClick={() => {
-                const estimate = { id: Math.random().toString(36).substr(2, 9), estNo, date, customerName, mobileNumber, items, subTotal, totalCost, discount, gstType, gstRate, grandTotal, paidAmount, balance };
-                setEstimates([...estimates, estimate]);
-                alert('Saved to ERP History');
-              }} className="btn-secondary w-full !text-xs !py-3 uppercase tracking-tighter">
+              <button onClick={handleSave} className="btn-secondary w-full !text-xs !py-3 uppercase tracking-tighter">
                 <Save size={14} /> Save
               </button>
             </div>
@@ -221,6 +265,7 @@ export default function EstimateForm() {
         </div>
       </div>
 
+      {/* Actual Printable Invoice Section */}
       <div className="hidden print:block invoice-container bg-white text-black min-h-screen">
         <header className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
           <div className="flex items-center gap-4">
@@ -244,10 +289,11 @@ export default function EstimateForm() {
           <div>
             <p className="text-[9px] uppercase font-bold text-gray-500 mb-1">Bill To:</p>
             <p className="text-sm font-black uppercase">{customerName || 'Walk-in Customer'}</p>
-            <p className="text-[10px] font-bold mt-1">Mobile: {mobileNumber || 'N/A'}</p>
+            <p className="text-[10px] font-bold mt-1">Village: {village || 'N/A'}</p>
+            <p className="text-[10px] font-bold">Mobile: {mobileNumber || 'N/A'}</p>
           </div>
           <div className="text-right flex flex-col justify-end">
-            <p className="text-[10px] font-bold">Shop Location: Parola</p>
+            <p className="text-[10px] font-bold">Location: Parola</p>
           </div>
         </section>
 
@@ -268,9 +314,13 @@ export default function EstimateForm() {
               <tr key={item.id} className="border-b border-black">
                 <td className="p-2 border-r border-black text-center">{index + 1}</td>
                 <td className="p-2 border-r border-black font-bold uppercase">{item.particular}</td>
-                <td className="p-2 border-r border-black text-center font-bold">{item.length} x {item.width}</td>
+                <td className="p-2 border-r border-black text-center font-bold">
+                  {!item.isExtra ? `${item.length} x ${item.width}` : '-'}
+                </td>
                 <td className="p-2 border-r border-black text-center font-bold">{item.qty}</td>
-                <td className="p-2 border-r border-black text-center font-black">{(item.sqft || 0).toFixed(2)}</td>
+                <td className="p-2 border-r border-black text-center font-black">
+                  {!item.isExtra ? (item.sqft || 0).toFixed(2) : '-'}
+                </td>
                 <td className="p-2 border-r border-black text-center font-bold">{item.rate}</td>
                 <td className="p-2 text-right font-black">₹{(item.amount || 0).toFixed(2)}</td>
               </tr>

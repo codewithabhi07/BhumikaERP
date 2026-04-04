@@ -1,13 +1,14 @@
 export interface EstimateItem {
   id: string;
   particular: string;
-  length: number;
-  width: number;
+  length?: number;
+  width?: number;
   qty: number;
-  sqft: number;
+  sqft?: number;
   rate: number;
-  costPrice: number; // Added for profit calculation
+  costPrice: number;
   amount: number;
+  isExtra?: boolean; // True for items without measurements
 }
 
 export interface Estimate {
@@ -15,6 +16,7 @@ export interface Estimate {
   estNo: string;
   date: string;
   customerName: string;
+  village?: string; // Added village field
   mobileNumber: string;
   items: EstimateItem[];
   subTotal: number;
