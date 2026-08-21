@@ -1,24 +1,33 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { KhatabookService } from '@/lib/api';
 import { KhatabookEntry } from '@/types';
-import { Plus, Trash2, Search, MessageCircle, Calendar, ArrowUpRight, ArrowDownLeft, User, Phone, Award } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Search, 
+  MessageCircle, 
+  Calendar, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  User, 
+  Phone, 
+  Award, 
+  BookOpen, 
+  X,
+  Wallet,
+  Clock
+} from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { getWhatsAppUrl } from '@/lib/utils';
 
 export default function KhatabookPage() {
   const [entries, setEntries] = useState<KhatabookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'take' | 'give'>('take');
-  
-  useEffect(() => {
-    KhatabookService.getAll().then(data => {
-      setEntries(data);
-      setLoading(false);
-    });
-  }, []);
   
   // Form State
   const [name, setName] = useState('');
@@ -28,18 +37,28 @@ export default function KhatabookPage() {
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    KhatabookService.getAll().then(data => {
+      setEntries(data || []);
+      setLoading(false);
+    }).catch(() => {
+      toast.error('Failed to load Khatabook records');
+      setLoading(false);
+    });
+  }, []);
+
   const addEntry = async () => {
-    if (!name || !amount) {
-      toast.error('Name and Amount are required');
+    if (!name.trim() || !amount) {
+      toast.error('Customer name and amount are required');
       return;
     }
     const newEntry: Partial<KhatabookEntry> = {
-      name,
-      mobile,
+      name: name.trim(),
+      mobile: mobile.trim(),
       amount: Number(amount),
       type: activeTab,
       dueDate,
-      notes,
+      notes: notes.trim(),
       createdAt: new Date().toLocaleDateString('en-IN')
     };
     
@@ -53,20 +72,21 @@ export default function KhatabookPage() {
       setAmount('');
       setDueDate('');
       setNotes('');
-      toast.success('Entry added to Khatabook');
+      toast.success(`Recorded ₹${Number(amount).toLocaleString('en-IN')} in ${activeTab === 'take' ? 'Receivable' : 'Payable'}`);
     } catch (error) {
       toast.error('Failed to add entry');
     }
   };
 
   const deleteEntry = (id: string) => {
-    toast('Delete this entry?', {
+    toast('Delete this ledger entry?', {
+      description: 'The record will be permanently deleted from Khatabook.',
       action: {
         label: 'Delete',
         onClick: async () => {
           try {
             await KhatabookService.delete(id);
-            setEntries(entries.filter(e => e.id !== id));
+            setEntries(prev => prev.filter(e => e.id !== id));
             toast.success('Entry deleted');
           } catch (error) {
             toast.error('Failed to delete entry');
@@ -78,100 +98,125 @@ export default function KhatabookPage() {
 
   const sendWhatsApp = (entry: KhatabookEntry) => {
     if (!entry.mobile) {
-      toast.error('Mobile number not available');
+      toast.error('Mobile number not available for this record');
       return;
     }
     
     let message = "";
     if (entry.type === 'take') {
-      message = `Hello ${entry.name}, this is a reminder from Bhumika Tiles regarding a pending payment of ₹${entry.amount}. Please settle it by ${entry.dueDate || 'earliest'}. Thank you!`;
+      message = `Hello ${entry.name}, this is a gentle reminder from *Bhumika Tiles & Building Material* regarding a pending payment of *₹${entry.amount.toLocaleString('en-IN')}*. Please settle it by ${entry.dueDate || 'the earliest'}. Thank you!`;
     } else {
-      message = `Hello ${entry.name}, this is regarding the payment of ₹${entry.amount} that we owe you. We plan to settle it by ${entry.dueDate || 'soon'}. Thank you for your patience!`;
+      message = `Hello ${entry.name}, this is regarding the payment of *₹${entry.amount.toLocaleString('en-IN')}* from *Bhumika Tiles*. We plan to settle it by ${entry.dueDate || 'soon'}. Thank you for your patience!`;
     }
     
-    const url = `https://wa.me/91${entry.mobile}?text=${encodeURIComponent(message)}`;
+    const url = getWhatsAppUrl(entry.mobile, message);
     window.open(url, '_blank');
-    toast.success('WhatsApp opened');
+    toast.success('WhatsApp reminder opened');
   };
 
-  const filteredEntries = entries.filter(e => 
-    e.type === activeTab && 
-    (e.name.toLowerCase().includes(searchQuery.toLowerCase()) || e.mobile.includes(searchQuery))
-  );
+  const filteredEntries = useMemo(() => {
+    return entries.filter(e => 
+      e.type === activeTab && 
+      ((e.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (e.mobile || '').includes(searchQuery))
+    );
+  }, [entries, activeTab, searchQuery]);
 
-  const totalTake = entries.filter(e => e.type === 'take').reduce((sum, e) => sum + e.amount, 0);
-  const totalGive = entries.filter(e => e.type === 'give').reduce((sum, e) => sum + e.amount, 0);
+  const totalTake = entries.filter(e => e.type === 'take').reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalGive = entries.filter(e => e.type === 'give').reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="py-12 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Khatabook...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="py-4">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-sm no-print">
         <div>
-          <h1 className="text-4xl font-black text-secondary tracking-tighter">Khatabook</h1>
-          <p className="text-gray-400 font-bold text-sm mt-1 uppercase tracking-widest">Manage your Credit & Debit</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+            Khatabook & Credit Ledger
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Track customer balances, payment reminders, and supplier payables
+          </p>
         </div>
         
-        <div className="flex gap-4">
-          <Link href="/thekedars" className="bg-white border-2 border-slate-100 p-4 rounded-2xl flex items-center gap-3 hover:border-emerald-600 transition-all shadow-sm group">
-            <div className="p-2 bg-slate-50 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 rounded-lg transition-colors">
-              <Award size={20} />
-            </div>
-            <span className="font-black text-[10px] uppercase text-slate-500 tracking-widest group-hover:text-emerald-600">Thekedar Accounts</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link 
+            href="/thekedars" 
+            className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-700 transition-colors shadow-sm"
+          >
+            <Award size={16} className="text-emerald-600" />
+            <span>Thekedar Accounts</span>
           </Link>
           
-          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-4">
-            <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-200">
-              <ArrowDownLeft size={20} />
+          <div className="px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 shadow-sm">
+            <div className="p-2 bg-emerald-600 text-white rounded-lg">
+              <ArrowDownLeft size={16} />
             </div>
             <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">You will Take</p>
-              <p className="text-xl font-black text-emerald-600">₹ {totalTake.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] font-extrabold uppercase text-emerald-600">You Will Take</p>
+              <p className="text-base font-black font-mono">₹ {totalTake.toLocaleString('en-IN')}</p>
             </div>
           </div>
           
-          <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-4">
-            <div className="p-3 bg-red-500 text-white rounded-xl shadow-lg shadow-red-200">
-              <ArrowUpRight size={20} />
+          <div className="px-4 py-2 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-center gap-3 shadow-sm">
+            <div className="p-2 bg-red-600 text-white rounded-lg">
+              <ArrowUpRight size={16} />
             </div>
             <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">You will Give</p>
-              <p className="text-xl font-black text-red-600">₹ {totalGive.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] font-extrabold uppercase text-red-600">You Will Give</p>
+              <p className="text-base font-black font-mono">₹ {totalGive.toLocaleString('en-IN')}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm h-fit space-y-6">
-          <div className="flex p-1 bg-gray-100 rounded-2xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: New Entry Form */}
+        <div className="erp-card p-6 h-fit sticky top-20">
+          {/* Tab Selector */}
+          <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
             <button 
               onClick={() => setActiveTab('take')}
               className={clsx(
-                "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-                activeTab === 'take' ? "bg-white text-emerald-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
+                "flex-1 py-2.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all",
+                activeTab === 'take' 
+                  ? "bg-white text-emerald-700 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
               )}
             >
-              You will Take
+              You Will Take (₹)
             </button>
             <button 
               onClick={() => setActiveTab('give')}
               className={clsx(
-                "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-                activeTab === 'give' ? "bg-white text-red-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
+                "flex-1 py-2.5 rounded-lg text-xs font-extrabold uppercase tracking-wider transition-all",
+                activeTab === 'give' 
+                  ? "bg-white text-red-700 shadow-sm" 
+                  : "text-slate-500 hover:text-slate-800"
               )}
             >
-              You will Give
+              You Will Give (₹)
             </button>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="erp-label">Name</label>
+              <label className="erp-label">Customer / Party Name</label>
               <div className="relative">
-                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
-                  type="text" value={name} onChange={(e) => setName(e.target.value)}
-                  className="erp-input pl-12 font-bold"
-                  placeholder="Enter Name"
+                  type="text" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  className="erp-input pl-10 font-bold"
+                  placeholder="Enter Party Name"
                 />
               </div>
             </div>
@@ -179,20 +224,24 @@ export default function KhatabookPage() {
             <div>
               <label className="erp-label">Mobile Number</label>
               <div className="relative">
-                <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
-                  type="text" value={mobile} onChange={(e) => setMobile(e.target.value)}
-                  className="erp-input pl-12 font-bold"
+                  type="text" 
+                  value={mobile} 
+                  onChange={(e) => setMobile(e.target.value)}
+                  className="erp-input pl-10 font-bold"
                   placeholder="10-digit number"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="erp-label">Amount (₹)</label>
                 <input 
-                  type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                  type="number" 
+                  value={amount} 
+                  onChange={(e) => setAmount(e.target.value)}
                   className="erp-input font-bold"
                   placeholder="0.00"
                 />
@@ -200,101 +249,121 @@ export default function KhatabookPage() {
               <div>
                 <label className="erp-label">Due Date</label>
                 <input 
-                  type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                  type="date" 
+                  value={dueDate} 
+                  onChange={(e) => setDueDate(e.target.value)}
                   className="erp-input font-bold text-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="erp-label">Notes</label>
+              <label className="erp-label">Notes / Bill Reference</label>
               <textarea 
-                value={notes} onChange={(e) => setNotes(e.target.value)}
-                className="erp-input h-24 resize-none text-sm font-medium"
-                placeholder="Optional notes..."
+                value={notes} 
+                onChange={(e) => setNotes(e.target.value)}
+                className="erp-input h-20 resize-none text-xs font-medium"
+                placeholder="Optional notes or details..."
               ></textarea>
             </div>
 
             <button 
               onClick={addEntry}
               className={clsx(
-                "w-full text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:scale-[1.02] transition-all shadow-xl active:scale-95 mt-4",
-                activeTab === 'take' ? "bg-emerald-500 shadow-emerald-100" : "bg-red-500 shadow-red-100"
+                "w-full text-white py-3.5 px-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md active:scale-95",
+                activeTab === 'take' 
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-950/20" 
+                  : "bg-red-600 hover:bg-red-700 shadow-red-950/20"
               )}
             >
-              Add Entry
+              Save to {activeTab === 'take' ? 'Receivable' : 'Payable'}
             </button>
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
-            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4">
-              <Search size={20} className="text-gray-400" />
+        {/* Right Column: Ledger List */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="erp-card overflow-hidden">
+            {/* Search Toolbar */}
+            <div className="p-4 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3">
+              <Search size={18} className="text-slate-400" />
               <input 
-                type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name or mobile..." 
-                className="bg-transparent outline-none font-bold text-sm w-full"
+                type="text" 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search ledger by name or mobile number..." 
+                className="bg-transparent outline-none font-bold text-xs sm:text-sm w-full"
               />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
+                  <X size={15} />
+                </button>
+              )}
             </div>
 
-            <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+            <div className="divide-y divide-slate-100 max-h-[700px] overflow-y-auto">
               {filteredEntries.length === 0 ? (
-                <div className="p-20 text-center">
-                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                    <User size={32} className="text-gray-200" />
-                  </div>
-                  <p className="text-gray-400 font-bold italic">No entries found in this category.</p>
+                <div className="p-16 text-center text-slate-400 font-bold italic text-sm">
+                  No records found in {activeTab === 'take' ? 'Receivable' : 'Payable'} ledger.
                 </div>
               ) : (
                 filteredEntries.map((entry) => (
-                  <div key={entry.id} className="p-6 hover:bg-gray-50/50 transition-all group flex items-center justify-between">
-                    <div className="flex items-center gap-5">
+                  <div key={entry.id} className="p-4 sm:p-5 hover:bg-slate-50/80 transition-all group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
                       <div className={clsx(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner",
-                        entry.type === 'take' ? "bg-emerald-50 text-emerald-500" : "bg-red-50 text-red-500"
+                        "w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm shadow-inner shrink-0",
+                        entry.type === 'take' ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"
                       )}>
-                        <User size={20} />
+                        {entry.name ? entry.name.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <div>
-                        <h4 className="font-black text-secondary text-base uppercase leading-none mb-1">{entry.name}</h4>
-                        <div className="flex items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-tighter">
+                      <div className="min-w-0">
+                        <h4 className="font-extrabold text-slate-800 text-sm uppercase leading-none truncate">
+                          {entry.name}
+                        </h4>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-bold mt-1">
                           <span>{entry.mobile || 'No Mobile'}</span>
                           <span>•</span>
-                          <span className="flex items-center gap-1"><Calendar size={10}/> {entry.createdAt}</span>
+                          <span className="flex items-center gap-1 font-mono text-[10px]">
+                            <Calendar size={11}/> {entry.createdAt}
+                          </span>
                         </div>
-                        {entry.notes && <p className="text-xs text-slate-400 mt-2 font-medium italic">"{entry.notes}"</p>}
+                        {entry.notes && (
+                          <p className="text-xs text-slate-500 mt-1.5 font-medium italic">
+                            "{entry.notes}"
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-8 text-right">
-                      <div>
+                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                      <div className="text-left sm:text-right">
                         <p className={clsx(
-                          "text-xl font-black tracking-tighter",
-                          entry.type === 'take' ? "text-emerald-600" : "text-red-600"
+                          "text-base sm:text-lg font-black font-mono tracking-tight",
+                          entry.type === 'take' ? "text-emerald-700" : "text-red-700"
                         )}>
                           ₹ {(entry.amount || 0).toLocaleString('en-IN')}
                         </p>
                         {entry.dueDate && (
-                          <p className="text-[9px] font-black uppercase text-orange-400 tracking-widest mt-1">
+                          <p className="text-[10px] font-extrabold uppercase text-amber-600 tracking-wider mt-0.5">
                             Due: {new Date(entry.dueDate).toLocaleDateString('en-IN')}
                           </p>
                         )}
                       </div>
 
-                      <div className="flex gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1.5">
                         <button 
                           onClick={() => sendWhatsApp(entry)}
-                          className="p-3 bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm"
+                          className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-200 shadow-sm"
                           title="Send WhatsApp Reminder"
                         >
-                          <MessageCircle size={18} />
+                          <MessageCircle size={16} />
                         </button>
                         <button 
                           onClick={() => deleteEntry(entry.id)}
-                          className="p-3 bg-gray-50 text-gray-300 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm"
+                          className="p-2.5 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all border border-slate-200 shadow-sm"
+                          title="Delete Record"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>

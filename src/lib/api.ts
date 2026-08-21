@@ -44,6 +44,22 @@ export const CustomerService = {
   delete: (id: string) => api.delete(`/customers/${id}`).then(res => res.data),
 };
 
+export const CuttingService = {
+  getAll: () => api.get('/cutting').then(res => res.data),
+  getById: (id: string) => api.get(`/cutting/${id}`).then(res => res.data),
+  create: (data: any) => api.post('/cutting', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/cutting/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/cutting/${id}`).then(res => res.data),
+};
+
+export const ChallanService = {
+  getAll: () => api.get('/challans').then(res => res.data),
+  getById: (id: string) => api.get(`/challans/${id}`).then(res => res.data),
+  create: (data: any) => api.post('/challans', data).then(res => res.data),
+  update: (id: string, data: any) => api.put(`/challans/${id}`, data).then(res => res.data),
+  delete: (id: string) => api.delete(`/challans/${id}`).then(res => res.data),
+};
+
 export const SettingsService = {
   get: () => api.get('/settings').then(res => res.data),
   update: (data: any) => api.put('/settings', data).then(res => res.data),

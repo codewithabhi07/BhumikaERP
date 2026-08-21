@@ -39,11 +39,353 @@
       "paidAmount": 0,
       "balance": 50,
       "id": "t3a8kvefg"
+    },
+    {
+      "estNo": "EST-20260821-887",
+      "date": "21/08/2026",
+      "customerName": "Ganesh",
+      "village": "lasur",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "Golden galexy",
+          "length": "11",
+          "width": "22",
+          "qty": 1,
+          "sqft": 2,
+          "rate": "150",
+          "costPrice": 0,
+          "amount": 300,
+          "isExtra": false
+        }
+      ],
+      "subTotal": 300,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 300,
+      "paidAmount": 0,
+      "balance": 300,
+      "id": "gtwt4st93"
+    },
+    {
+      "estNo": "EST-20260821-717",
+      "date": "21/08/2026",
+      "customerName": "Ganesh",
+      "village": "Lasur",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "kadappa",
+          "length": "11",
+          "width": "33",
+          "qty": 1,
+          "sqft": 2.75,
+          "rate": "120",
+          "costPrice": 0,
+          "amount": 330,
+          "isExtra": false
+        }
+      ],
+      "subTotal": 330,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 330,
+      "paidAmount": 0,
+      "balance": 330,
+      "id": "df04ri3of"
+    },
+    {
+      "estNo": "EST-20260821-729",
+      "date": "21/08/2026",
+      "customerName": "Ganesh",
+      "village": "parola",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "Golden galexy",
+          "length": "11",
+          "width": "33",
+          "qty": 1,
+          "sqft": 2.75,
+          "rate": "120",
+          "costPrice": 0,
+          "amount": 330,
+          "isExtra": false
+        }
+      ],
+      "subTotal": 330,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 330,
+      "paidAmount": 0,
+      "balance": 330,
+      "id": "z0c96a2ql"
+    },
+    {
+      "estNo": "EST-20260821-546",
+      "date": "21/08/2026",
+      "customerName": "Walk-in Customer",
+      "village": "",
+      "mobileNumber": "",
+      "items": [
+        {
+          "id": "1",
+          "particular": "GOLDEN GALEXY",
+          "length": "11",
+          "width": "33",
+          "qty": "5",
+          "sqft": 12.75,
+          "rate": "120",
+          "costPrice": 0,
+          "amount": 1530,
+          "isExtra": false
+        }
+      ],
+      "subTotal": 1530,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 1530,
+      "paidAmount": 0,
+      "balance": 1530,
+      "id": "ka1j6950a"
+    },
+    {
+      "estNo": "EST-20260821-403",
+      "date": "21/08/2026",
+      "customerName": "GANESH MALI",
+      "village": "LASUR",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "KADAPPA",
+          "length": "11",
+          "width": "55",
+          "qty": 1,
+          "sqft": 4.5,
+          "rate": "120",
+          "costPrice": 0,
+          "amount": 540,
+          "isExtra": false
+        }
+      ],
+      "subTotal": 540,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 540,
+      "paidAmount": 0,
+      "balance": 540,
+      "id": "c1hs0yvkn"
+    },
+    {
+      "estNo": "EST-20260821-403",
+      "date": "21/08/2026",
+      "customerName": "GANESH MALI",
+      "village": "LASUR",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "KADAPPA",
+          "length": "11",
+          "width": "55",
+          "qty": 1,
+          "sqft": 4.5,
+          "rate": "120",
+          "costPrice": 0,
+          "amount": 540,
+          "isExtra": false
+        }
+      ],
+      "subTotal": 540,
+      "totalCost": 0,
+      "discount": 0,
+      "gstType": "none",
+      "gstRate": 18,
+      "grandTotal": 540,
+      "paidAmount": 0,
+      "balance": 540,
+      "id": "4wty8a00j"
     }
   ],
   "products": [],
   "khatabook": [],
   "customers": [],
+  "cuttingOrders": [
+    {
+      "estNo": "EST-20260821-887",
+      "date": "21/08/2026",
+      "customerName": "Ganesh",
+      "village": "lasur",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "Golden galexy",
+          "length": "11",
+          "width": "22",
+          "qty": 1,
+          "sqft": 2,
+          "isExtra": false,
+          "notes": ""
+        }
+      ],
+      "status": "pending",
+      "createdAt": "21/08/2026",
+      "id": "mw31b73f6"
+    },
+    {
+      "estNo": "EST-20260821-717",
+      "date": "21/08/2026",
+      "customerName": "Ganesh",
+      "village": "Lasur",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "kadappa",
+          "length": "11",
+          "width": "33",
+          "qty": 1,
+          "sqft": 2.75,
+          "isExtra": false,
+          "notes": ""
+        }
+      ],
+      "status": "pending",
+      "createdAt": "21/08/2026",
+      "id": "yx7dsg58f"
+    },
+    {
+      "estNo": "EST-20260821-729",
+      "date": "21/08/2026",
+      "customerName": "Ganesh",
+      "village": "parola",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "Golden galexy",
+          "length": "11",
+          "width": "33",
+          "qty": 1,
+          "sqft": 2.75,
+          "isExtra": false,
+          "notes": ""
+        }
+      ],
+      "status": "pending",
+      "createdAt": "21/08/2026",
+      "id": "k5pdlvv1u"
+    },
+    {
+      "estNo": "EST-20260821-546",
+      "date": "21/08/2026",
+      "customerName": "Walk-in Customer",
+      "village": "",
+      "mobileNumber": "",
+      "items": [
+        {
+          "id": "1",
+          "particular": "GOLDEN GALEXY",
+          "length": "11",
+          "width": "33",
+          "qty": "5",
+          "sqft": 12.75,
+          "isExtra": false,
+          "notes": ""
+        }
+      ],
+      "status": "pending",
+      "createdAt": "21/08/2026",
+      "id": "fh8qskil4"
+    },
+    {
+      "estNo": "EST-20260821-403",
+      "date": "21/08/2026",
+      "customerName": "GANESH MALI",
+      "village": "LASUR",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "KADAPPA",
+          "length": "11",
+          "width": "55",
+          "qty": 1,
+          "sqft": 4.5,
+          "isExtra": false,
+          "notes": ""
+        }
+      ],
+      "status": "pending",
+      "createdAt": "21/08/2026",
+      "id": "4hx6ltbae"
+    },
+    {
+      "estNo": "EST-20260821-403",
+      "date": "21/08/2026",
+      "customerName": "GANESH MALI",
+      "village": "LASUR",
+      "mobileNumber": "9921674320",
+      "items": [
+        {
+          "id": "1",
+          "particular": "KADAPPA",
+          "length": "11",
+          "width": "55",
+          "qty": 1,
+          "sqft": 4.5,
+          "isExtra": false,
+          "notes": ""
+        }
+      ],
+      "status": "pending",
+      "createdAt": "21/08/2026",
+      "id": "yhm3pw584"
+    }
+  ],
+  "deliveryChallans": [
+    {
+      "challanNo": "DC-20260821-734",
+      "estNo": "EST-20260821-887",
+      "cuttingOrderId": "mw31b73f6",
+      "date": "21/8/2026",
+      "customerName": "Ganesh",
+      "village": "lasur",
+      "mobileNumber": "9921674320",
+      "deliveryAddress": "lasur, Site Delivery",
+      "vehicleNo": "Swift",
+      "driverName": "Banti",
+      "notes": "",
+      "items": [
+        {
+          "id": "1",
+          "particular": "Golden galexy",
+          "length": "11",
+          "width": "22",
+          "dispatchedQty": 1,
+          "sqft": 2,
+          "isExtra": false
+        }
+      ],
+      "id": "y7yi7629r",
+      "createdAt": "21/8/2026"
+    }
+  ],
   "settings": {
     "shopName": "Bhumika Tiles & Building Material",
     "managerName": "Rohit Chavan",

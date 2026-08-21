@@ -34,3 +34,23 @@ export function numberToWords(amount: number): string {
 
   return convert(Math.round(amount));
 }
+
+export function normalizeWhatsAppNumber(phone: string): string {
+  let cleaned = (phone || '').replace(/\D/g, '');
+  if (!cleaned) return '';
+  if (cleaned.length === 10) return '91' + cleaned;
+  if (cleaned.length === 11 && cleaned.startsWith('0')) return '91' + cleaned.slice(1);
+  if (cleaned.length === 12 && cleaned.startsWith('91')) return cleaned;
+  if (cleaned.startsWith('0091')) return cleaned.slice(2);
+  if (cleaned.length > 10) return cleaned;
+  return '91' + cleaned;
+}
+
+export function getWhatsAppUrl(phone: string, text: string): string {
+  const normalized = normalizeWhatsAppNumber(phone);
+  if (!normalized) {
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  }
+  return `https://api.whatsapp.com/send?phone=${normalized}&text=${encodeURIComponent(text)}`;
+}
+

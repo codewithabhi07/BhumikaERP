@@ -1,9 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CustomerService } from '@/lib/api';
 import { Customer } from '@/types';
-import { Plus, Trash2, User, MapPin, Phone, Search, Award, FileText } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  User, 
+  MapPin, 
+  Phone, 
+  Search, 
+  Award, 
+  FileText, 
+  ExternalLink,
+  X,
+  Wallet
+} from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -19,9 +31,9 @@ export default function ThekedarsPage() {
     const fetchCustomers = async () => {
       try {
         const data = await CustomerService.getAll();
-        setCustomers(data);
+        setCustomers(data || []);
       } catch (error) {
-        toast.error('Failed to load thekedar accounts');
+        toast.error('Failed to load Thekedar accounts');
       } finally {
         setLoading(false);
       }
@@ -30,14 +42,14 @@ export default function ThekedarsPage() {
   }, []);
 
   const addThekedar = async () => {
-    if (!name || !mobile) {
-      toast.error('Please enter name and mobile number');
+    if (!name.trim() || !mobile.trim()) {
+      toast.error('Please enter contractor name and mobile number');
       return;
     }
     const newThekedar: Partial<Customer> = {
-      name,
-      mobile,
-      village,
+      name: name.trim(),
+      mobile: mobile.trim(),
+      village: village.trim(),
       isThekedar: true,
       totalOrders: 0,
       totalSpent: 0,
@@ -50,150 +62,220 @@ export default function ThekedarsPage() {
       setName('');
       setVillage('');
       setMobile('');
-      toast.success('Thekedar account created');
+      toast.success('Contractor profile created successfully');
     } catch (error) {
       toast.error('Failed to create account');
     }
   };
 
   const deleteThekedar = (id: string) => {
-    toast('Delete this thekedar account?', {
-      description: 'All linked transaction balances will be removed from this view.',
+    toast('Delete this contractor profile?', {
+      description: 'The contractor profile will be removed from the master registry.',
       action: {
         label: 'Delete',
         onClick: async () => {
           try {
             await CustomerService.delete(id);
-            setCustomers(customers.filter(c => c.id !== id));
-            toast.success('Account deleted');
+            setCustomers(prev => prev.filter(c => c.id !== id));
+            toast.success('Contractor profile removed');
           } catch (error) {
-            toast.error('Failed to delete account');
+            toast.error('Failed to delete profile');
           }
         },
       },
     });
   };
 
-  const filteredThekedars = customers.filter(c => 
-    c.isThekedar && 
-    (c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.mobile.includes(searchQuery))
-  );
+  const filteredThekedars = useMemo(() => {
+    return customers.filter(c => 
+      c.isThekedar && 
+      ((c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || (c.mobile || '').includes(searchQuery) || (c.village || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [customers, searchQuery]);
+
+  const totalOutstanding = filteredThekedars.reduce((sum, c) => sum + (c.balance || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="py-12 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Contractors...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="py-4">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-sm no-print">
         <div>
-          <h1 className="text-4xl font-black text-secondary tracking-tighter">Thekedar Accounts</h1>
-          <p className="text-gray-400 font-bold text-sm mt-1 uppercase tracking-widest">Manage Contractor Credits & Profiles</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+            Thekedar Accounts & Credits
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Registered contractors, running ledgers, and statement reports
+          </p>
         </div>
-        <div className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl flex items-center gap-3 font-black text-sm border border-emerald-100 shadow-sm transition-all hover:scale-105">
-          <Award size={20} />
-          {filteredThekedars.length} Registered Accounts
+
+        <div className="flex items-center gap-3">
+          <div className="px-4 py-2 bg-emerald-50 text-emerald-800 rounded-xl border border-emerald-200 flex items-center gap-2 text-xs font-bold shadow-sm">
+            <Award size={16} className="text-emerald-600" />
+            <span>{filteredThekedars.length} Contractors</span>
+          </div>
+          <div className="px-4 py-2 bg-amber-50 text-amber-800 rounded-xl border border-amber-200 flex items-center gap-2 text-xs font-bold shadow-sm">
+            <Wallet size={16} className="text-amber-600" />
+            <span>Total Due: ₹ {totalOutstanding.toLocaleString('en-IN')}</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="erp-card h-fit">
-          <div className="erp-card-header">
-            <span className="erp-card-title">Register New Thekedar</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Register Card */}
+        <div className="erp-card p-6 h-fit sticky top-20">
+          <div className="border-b border-slate-100 pb-3 mb-5">
+            <h3 className="font-black text-slate-800 uppercase text-xs tracking-wider flex items-center gap-2">
+              <Award size={16} className="text-emerald-600" />
+              Register New Contractor
+            </h3>
           </div>
-          <div className="p-6 space-y-4">
+
+          <div className="space-y-4">
             <div>
-              <label className="erp-label">Full Name</label>
+              <label className="erp-label">Contractor Full Name</label>
               <div className="relative">
-                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
-                  type="text" value={name} onChange={e => setName(e.target.value)}
-                  className="erp-input pl-12 font-bold" placeholder="e.g. Sunil Patil"
+                  type="text" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)}
+                  className="erp-input pl-10 font-bold" 
+                  placeholder="e.g. Sunil Patil"
                 />
               </div>
             </div>
+
             <div>
-              <label className="erp-label">Village / City</label>
+              <label className="erp-label">Village / Location</label>
               <div className="relative">
-                <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
-                  type="text" value={village} onChange={e => setVillage(e.target.value)}
-                  className="erp-input pl-12 font-bold" placeholder="e.g. Parola"
+                  type="text" 
+                  value={village} 
+                  onChange={e => setVillage(e.target.value)}
+                  className="erp-input pl-10 font-bold" 
+                  placeholder="e.g. Parola / Lasur"
                 />
               </div>
             </div>
+
             <div>
               <label className="erp-label">Mobile Number</label>
               <div className="relative">
-                <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
-                  type="text" value={mobile} onChange={e => setMobile(e.target.value)}
-                  className="erp-input pl-12 font-bold" placeholder="10 Digit Number"
+                  type="text" 
+                  value={mobile} 
+                  onChange={e => setMobile(e.target.value)}
+                  className="erp-input pl-10 font-bold" 
+                  placeholder="10-digit number"
                 />
               </div>
             </div>
+
             <button 
               onClick={addThekedar}
-              className="btn-primary w-full !py-4 uppercase tracking-[0.2em] text-xs mt-4 border-b-4 border-emerald-800"
+              className="btn-primary w-full py-3.5 mt-2 uppercase tracking-widest text-xs shadow-md shadow-emerald-950/20"
             >
-              Create Account
+              Create Thekedar Account
             </button>
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="erp-card overflow-hidden transition-all hover:shadow-lg">
-            <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
+        {/* Right Column: Contractor Directory Table */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="erp-card overflow-hidden">
+            {/* Search toolbar */}
+            <div className="p-4 bg-slate-50/80 border-b border-slate-100 flex items-center gap-3">
               <Search size={18} className="text-slate-400" />
               <input 
-                type="text" placeholder="Search accounts..." 
-                className="bg-transparent outline-none font-bold text-sm w-full"
+                type="text" 
+                placeholder="Search by name, village, or mobile number..." 
+                className="bg-transparent outline-none font-bold text-xs sm:text-sm w-full"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
+                  <X size={15} />
+                </button>
+              )}
             </div>
-            <table className="erp-table">
-              <thead>
-                <tr>
-                  <th>Thekedar Name</th>
-                  <th>Location</th>
-                  <th className="text-right">Balance Due</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredThekedars.length === 0 ? (
+
+            <div className="overflow-x-auto">
+              <table className="erp-table">
+                <thead>
                   <tr>
-                    <td colSpan={4} className="p-20 text-center text-slate-300 font-bold italic">No Thekedar accounts found.</td>
+                    <th>Thekedar Name</th>
+                    <th>Location</th>
+                    <th className="text-right">Balance Due</th>
+                    <th className="text-right">Statement & Actions</th>
                   </tr>
-                ) : (
-                  filteredThekedars.map((c) => (
-                    <tr key={c.id} className="group transition-colors">
-                      <td>
-                        <div className="font-bold text-slate-800 uppercase text-xs">{c.name}</div>
-                        <div className="text-[10px] text-slate-400 font-bold">{c.mobile}</div>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-1 text-slate-500 font-bold text-[10px] uppercase">
-                          <MapPin size={12} /> {c.village || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="text-right">
-                        <span className={`font-black text-sm ${c.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                          ₹ {(c.balance || 0).toLocaleString('en-IN')}
-                        </span>
-                      </td>
-                      <td className="text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link href={`/thekedar/${c.id}`} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors bg-slate-50 rounded-lg border border-slate-100">
-                            <FileText size={18} />
-                          </Link>
-                          <button onClick={() => deleteThekedar(c.id)} className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 rounded-lg border border-slate-100">
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredThekedars.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-16 text-center text-slate-400 font-bold italic text-sm">
+                        No contractor accounts found.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredThekedars.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50/80 transition-colors group">
+                        <td>
+                          <div className="font-extrabold text-slate-800 uppercase text-xs sm:text-sm">
+                            {c.name}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-semibold font-mono">
+                            {c.mobile}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-1 text-slate-600 font-bold text-xs uppercase">
+                            <MapPin size={13} className="text-slate-400" /> 
+                            <span>{c.village || 'Local'}</span>
+                          </div>
+                        </td>
+                        <td className="text-right">
+                          <span className={`font-black text-xs sm:text-sm font-mono ${
+                            (c.balance || 0) > 0 ? 'text-red-600' : 'text-emerald-700'
+                          }`}>
+                            ₹ {(c.balance || 0).toLocaleString('en-IN')}
+                          </span>
+                        </td>
+                        <td className="text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link 
+                              href={`/thekedar/${c.id}`} 
+                              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-xl text-xs font-bold transition-colors border border-emerald-200 flex items-center gap-1 shadow-sm"
+                            >
+                              <FileText size={13} />
+                              <span>Statement</span>
+                            </Link>
+                            <button 
+                              onClick={() => deleteThekedar(c.id)} 
+                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 shadow-sm"
+                              title="Delete Profile"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

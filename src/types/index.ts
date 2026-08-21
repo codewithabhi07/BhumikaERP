@@ -83,3 +83,55 @@ export interface Employee {
   attendance: AttendanceEntry[];
   advances: AdvanceEntry[];
 }
+
+export interface CuttingOrderItem {
+  id: string;
+  particular: string;
+  length?: number;
+  width?: number;
+  qty: number;
+  sqft?: number;
+  isExtra?: boolean;
+  notes?: string;
+}
+
+export interface CuttingOrder {
+  id: string;
+  estNo: string;
+  date: string;
+  customerName: string;
+  village?: string;
+  mobileNumber: string;
+  items: CuttingOrderItem[];
+  status: 'pending' | 'in_progress' | 'completed';
+  cutterNotes?: string;
+  completedAt?: string;
+  createdAt: string;
+}
+
+export interface DeliveryChallanItem {
+  id: string;
+  particular: string;
+  length?: number;
+  width?: number;
+  dispatchedQty: number;
+  sqft?: number;
+  isExtra?: boolean;
+}
+
+export interface DeliveryChallan {
+  id: string;
+  challanNo: string;
+  estNo: string;
+  cuttingOrderId?: string;
+  date: string;
+  customerName: string;
+  village?: string;
+  mobileNumber: string;
+  deliveryAddress?: string;
+  vehicleNo: string;
+  driverName: string;
+  notes?: string;
+  items: DeliveryChallanItem[];
+  createdAt: string;
+}
